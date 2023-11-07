@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Spinner from "./Spinner";
 import Image from "next/image";
 import { ReactSortable } from "react-sortablejs";
@@ -11,18 +11,28 @@ const ProductForm = ({
         description: existingDescription,
         price: existingPrice,
         images: existingImages,
+        category: existingCategory,
+        properties: existingProperties,
     }) => {
     const [title, setTitle] = useState(existingTitle || '');
     const [description, setDescription] = useState(existingDescription || '');
     const [price, setPrice] = useState(existingPrice || '');
+    const [category, setCategory] = useState(existingCategory || '')                                                                                                                             
     const [images, setImages] = useState(existingImages || []);
+    const [productProperties, setProductProperties] = useState(existingProperties || {});
     const [goToProducts, setGoToProducts] = useState(false);
-    const [isUploading, setIsUploading] = useState(false)
+    const [isUploading, setIsUploading] = useState(false);
+    const [categories, setCategories] = useState([]);
     const router = useRouter();
+    useEffect(() => {
+        axios.get('/api/categories').then(response => {
+            setCategories(response.data);
+        })
+    }, [])
     async function saveProduct (e) {
         e.preventDefault();
 
-        const data = {title, description, price, images};
+        const data = {title, description, price, images, category, properties:productProperties};
         if(_id) {
             //update
             await axios.put('/api/products', {...data, _id})
@@ -60,6 +70,28 @@ const ProductForm = ({
     setImages(images);
     }
 
+    const propertiesToFill = [];
+    function fillProperties(propCategory) {
+        let refID = categories.find(({_id}) => _id === propCategory);
+        if(propCategory && !!refID?.parent) {
+            fillProperties(refID?.parent?._id);
+        }
+        if(!!propCategory?.length && propCategory) {
+            let selCatInfo = categories.find(({_id}) => _id === propCategory);
+            propertiesToFill.push(...(selCatInfo?.properties || []))
+        }
+        return
+    }
+    fillProperties(category);
+
+    function setProductProp(propName, value) {
+        setProductProperties(prev => {
+            const newProductProps = {...prev};
+            newProductProps[propName] = value;
+            return newProductProps;
+        })
+    }
+
     return (
             <form onSubmit={saveProduct}>
                 <label>Product Name</label>
@@ -68,6 +100,33 @@ const ProductForm = ({
                     placeholder="Product Name"
                     value={title}
                     onChange={e =>  setTitle(e.target.value)} />
+                <label>Category</label>
+                <select 
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}>
+                    <option value="">Uncategorized</option>
+                    {!!categories?.length && categories.map(c => (
+                        <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                </select>
+                <div>
+                    <label>Properties</label>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                {!!propertiesToFill?.length && propertiesToFill.map(p => (
+                    <div key={p.name} className="flex gap-1 items-center">
+                        <div className="flex mb-2 text-center">
+                            {p.name}
+                        </div>
+                        <select value={productProperties[p.name]} onChange={e => setProductProp(p.name, e.target.value)}>
+                            {p.value.map(v => (
+                                <option key={v} value={v}>{v}</option>
+                            ))}
+                        </select>
+                    </div>
+                )
+                )}
+                </div>
                 <label>Photos</label>
                 <div className="mb-2 flex flex-wrap gap-2">
                     <ReactSortable 
@@ -112,7 +171,10 @@ const ProductForm = ({
                     placeholder="Price"
                     value={price}
                     onChange={e => setPrice(e.target.value)} />
-                <button type="submit" className="px-4 py-1 btn1">Save</button>
+                <div className="flex gap-2">
+                    <button type="submit" className="px-4 py-1 btn1">Save</button>
+                    <button type="button" className="btn-red py-1 px-4" onClick={() => router.push('/Products')}>Cancel</button>
+                </div>
             </form>
     )
 }

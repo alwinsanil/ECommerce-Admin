@@ -31,6 +31,10 @@ img {
   @apply bg-blue-900 hover:bg-blue-800 rounded-md text-white;
 }
 
+.btn2 {
+  @apply bg-gray-200 border text-center py-1 px-2 rounded-lg hover:bg-gray-300 flex gap-1 text-sm font-medium
+}
+
 .btn-red {
   @apply bg-red-800 hover:bg-red-700 rounded-md text-white;
 }

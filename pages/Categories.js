@@ -4,10 +4,11 @@ import { useEffect, useState } from "react"
 import { withSwal } from "react-sweetalert2"
 
 function Categories({swal}) {
-    const [name, setName] = useState('')
-    const [categories, setCategories] = useState([])
-    const [parentCategory, setParentCategory] = useState('')
-    const [editMode, setEditMode] = useState(null)
+    const [name, setName] = useState('');
+    const [categories, setCategories] = useState([]);
+    const [parentCategory, setParentCategory] = useState('');
+    const [editMode, setEditMode] = useState(null);
+    const [properties, setProperties] = useState([]);
     useEffect(() => {
         fetchCategories();
     }, [])
@@ -18,7 +19,12 @@ function Categories({swal}) {
     }
     async function saveCategory(e) {
         e.preventDefault();
-        const data = {name};
+        const data = {
+            name, 
+            properties:properties.map(p => ({
+                name:p.name, value:p.value.split(',')
+            }))
+        };
         if (parentCategory !== '') {
         data.parentCategory = parentCategory;
         }
@@ -31,18 +37,27 @@ function Categories({swal}) {
         }
         setName('');
         setParentCategory('');
+        setProperties([]);
         fetchCategories();
     }
     function editCategory(category) {
         setEditMode(category);
         setName(category.name);
         {category.parent?._id ? setParentCategory(category.parent?._id) : setParentCategory("")};
+        {category?.properties
+            ? setProperties(
+                category.properties.map(({name, value}) => ({
+                    name, value:value.join(',')
+                }))
+            )
+            : setProperties('')};
     }
     function deleteCategory(category) {
         swal.fire({
             title: 'Are you sure?',
             text: `Do you want to delete ${category.name}?`,
             showCancelButton: true,
+            icon: 'warning',
             //cancelButtonColor: '',
             confirmButtonText: 'Delete',
             confirmButtonColor: '#bf0000',
@@ -56,30 +71,100 @@ function Categories({swal}) {
             }
         });
     }
+    function addProperty() {
+        setProperties(prev => {
+            return  [...prev, {name:'', value:''}]
+        })
+    }
+    function handlePropNameChange(index, property, newName) {
+        setProperties(prev => {
+            const properties = [...prev];
+            properties[index].name = newName;
+            return properties;
+        })
+    }
+    function handlePropValueChange(index, property, newValue) {
+        setProperties(prev => {
+            const properties = [...prev];
+            properties[index].value = newValue;
+            return properties;
+        })
+    }
+    function removeProp(indexToRemove) {
+        setProperties(prev => {
+            return [...prev].filter((p,pIndex) => {
+                return pIndex !==  indexToRemove;
+        });
+    });
+}
 
     return (
         <Layout>
             <h1>Categories</h1>
             <label>{editMode ? 'Edit Category' : 'Create New Category'}</label>
-            <form onSubmit={saveCategory} className="flex gap-1">
-                <input 
-                    className="mb-0" 
-                    type="text" 
-                    placeholder={'Category Name'}
-                    value={name}
-                    onChange={e => setName(e.target.value)} />
-                <select 
-                    className="mb-0"
-                    value={parentCategory}
-                    onChange={e => setParentCategory(e.target.value)} >
-                    <option value="">No Parent Category</option>
-                    {categories.length > 0 && categories.map(category => (
-                        <option key={category._id} value={category._id}>{category.name}</option>
+            <form onSubmit={saveCategory}>
+                <div className="flex gap-1">
+                    <input 
+                        type="text" 
+                        placeholder={'Category Name'}
+                        value={name}
+                        onChange={e => setName(e.target.value)} />
+                    <select 
+                        value={parentCategory}
+                        onChange={e => setParentCategory(e.target.value)} >
+                        <option value="">No Parent Category</option>
+                        {categories.length > 0 && categories.map(category => (
+                            <option key={category._id} value={category._id}>{category.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="mb-2">
+                    <label>Properties</label>
+                    <button 
+                        type="button" 
+                        className="btn2 mb-2"
+                        onClick={() => addProperty()}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+                        </svg>
+                        Add New Property
+                    </button>
+                    {!!properties?.length && properties.map((property, index) => (
+                        // eslint-disable-next-line react/jsx-key
+                        <div key={index} className="flex gap-1">
+                            <input 
+                                type="text" 
+                                placeholder="Property Name"
+                                value={property.name}
+                                onChange={e => handlePropNameChange(index, property, e.target.value)} />
+                            <input 
+                                type="text" 
+                                placeholder="Values (Comma Separated)"
+                                value={property.value || ''}
+                                onChange={e => handlePropValueChange(index, property, e.target.value)} />
+                            <button type="button" onClick={() => removeProp(index)} className="btn-red mb-2 px-2">Delete</button>
+                        </div>
                     ))}
-                </select>
-                <button type="submit" className="btn1 px-4 py-1">Save</button>
+                </div>
+                <div className="flex gap-2">
+                    <button type="submit" className="btn1 px-4 py-1">Save</button>
+                    {!!editMode && (
+                        <button 
+                            type="button" 
+                            onClick={() => {
+                                setEditMode(null);
+                                setName('');
+                                setParentCategory('')
+                                setProperties([]);
+                            }} 
+                            className="btn-red px-4 py-1">
+                            Cancel
+                        </button>
+                     )}
+                </div>
             </form>
-            <table className="basic mt-4">
+            {!editMode && (
+                <table className="basic mt-4">
                 <thead>
                     <tr>
                         <td>Category Name</td>
@@ -114,6 +199,8 @@ function Categories({swal}) {
                     ))}
                 </tbody>
             </table>
+            )}
+            
         </Layout>
     )
 }
