@@ -32,7 +32,10 @@ const ProductForm = ({
     async function saveProduct (e) {
         e.preventDefault();
 
-        const data = {title, description, price, images, category, properties:productProperties};
+        const data = {title, description, price, images, properties:productProperties};
+        if (category.trim() !== '') {
+            data.category = category
+        }
         if(_id) {
             //update
             await axios.put('/api/products', {...data, _id})
@@ -119,6 +122,7 @@ const ProductForm = ({
                             {p.name}
                         </div>
                         <select value={productProperties[p.name]} onChange={e => setProductProp(p.name, e.target.value)}>
+                            <option value="">Select One</option>
                             {p.value.map(v => (
                                 <option key={v} value={v}>{v}</option>
                             ))}
@@ -145,7 +149,7 @@ const ProductForm = ({
                     ))}
                     </ReactSortable>
                     {isUploading && (
-                        <div className="h-24 w-24 p-1 bg-gray-100 flex items-center rounded-lg">
+                        <div className="h-24 w-24 p-1 bg-gray-100 flex items-center justify-center rounded-lg">
                             <Spinner />
                         </div>
                     )}

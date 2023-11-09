@@ -2,6 +2,7 @@ import Link from "next/link"
 import Layout from "../components/Layout"
 import { useEffect, useState } from "react"
 import axios from "axios"
+import { RiAddBoxFill } from 'react-icons/ri'
 
 const Products = () => {
   const [products, setProducts] = useState([])
@@ -12,7 +13,10 @@ const Products = () => {
   }, []);
   return (
     <Layout>
-      <Link className="btn1 px-2 py-1" href={'/Products/new'}>Add new product</Link>
+      <Link className="inline-flex btn1 px-2 py-1 gap-2" href={'/Products/new'}>
+        <RiAddBoxFill className="w-6 h-6 rounded-lg" />
+        Add new product
+      </Link>
       <table className="basic mt-2">
         <thead>
           <tr>
