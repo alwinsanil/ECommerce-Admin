@@ -26,7 +26,6 @@ const Products = () => {
         </thead>
         <tbody>
           {products.map(product => (
-            // eslint-disable-next-line react/jsx-key
             <tr key={product._id}>
               <td>{product.title}</td>
               <td>
